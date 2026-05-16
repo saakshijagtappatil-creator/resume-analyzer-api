@@ -1,0 +1,19 @@
+# k8s/staging/service.yml
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: resume-analyzer-service
+  namespace: staging
+  labels:
+    app: resume-analyzer
+    env: staging
+spec:
+  type: ClusterIP
+  selector:
+    app: resume-analyzer
+  ports:
+    - name: http
+      protocol: TCP
+      port: 80
+      targetPort: 8080

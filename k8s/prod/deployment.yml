@@ -1,0 +1,66 @@
+# k8s/prod/deployment.yml
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: resume-analyzer
+  namespace: prod
+  labels:
+    app: resume-analyzer
+    env: prod
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: resume-analyzer
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: resume-analyzer
+        env: prod
+    spec:
+      containers:
+        - name: resume-analyzer
+          image: ${OCIR_IMAGE}
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: resume-analyzer-config
+            - secretRef:
+                name: resume-analyzer-secret
+          resources:
+            requests:
+              memory: 512Mi
+              cpu: 500m
+            limits:
+              memory: 1Gi
+              cpu: 1000m
+          livenessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8080
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            failureThreshold: 3
+          volumeMounts:
+            - name: upload-dir
+              mountPath: /tmp/resumes
+      volumes:
+        - name: upload-dir
+          emptyDir: {}
+      imagePullSecrets:
+        - name: ocir-secret

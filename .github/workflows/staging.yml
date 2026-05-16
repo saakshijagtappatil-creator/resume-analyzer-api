@@ -1,0 +1,129 @@
+# .github/workflows/staging.yml
+
+name: Deploy to Staging
+
+on:
+  push:
+    branches:
+      - develop
+
+env:
+  OCIR_REGION: sin.ocir.io
+  OCIR_REPO: ${{ secrets.OCIR_TENANCY }}/resume-analyzer
+  IMAGE_TAG: ${{ github.sha }}
+
+jobs:
+
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Run tests
+        run: ./mvnw test -B
+        env:
+          SPRING_PROFILE: test
+
+  build-and-push:
+    name: Build and Push Docker Image
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Build jar
+        run: ./mvnw package -DskipTests -B
+
+      - name: Login to Oracle OCIR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.OCIR_REGION }}
+          username: ${{ secrets.OCIR_USERNAME }}
+          password: ${{ secrets.OCIR_PASSWORD }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ env.OCIR_REGION }}/${{ env.OCIR_REPO }}:${{ env.IMAGE_TAG }}
+            ${{ env.OCIR_REGION }}/${{ env.OCIR_REPO }}:staging-latest
+
+  deploy:
+    name: Deploy to OKE Staging
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    steps:
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v3
+
+      - name: Configure OKE kubeconfig
+        run: |
+          mkdir -p $HOME/.kube
+          echo "${{ secrets.OKE_STAGING_KUBECONFIG }}" | base64 -d > $HOME/.kube/config
+
+      - name: Create namespace if not exists
+        run: |
+          kubectl get namespace staging || kubectl create namespace staging
+
+      - name: Create OCIR image pull secret
+        run: |
+          kubectl create secret docker-registry ocir-secret \
+            --docker-server=${{ env.OCIR_REGION }} \
+            --docker-username=${{ secrets.OCIR_USERNAME }} \
+            --docker-password=${{ secrets.OCIR_PASSWORD }} \
+            --namespace=staging \
+            --dry-run=client -o yaml | kubectl apply -f -
+
+      - name: Inject secrets into secret.yml
+        run: |
+          sed -i "s|\${DB_URL_BASE64}|$(echo -n '${{ secrets.STAGING_DB_URL }}' | base64 -w 0)|g" k8s/staging/secret.yml
+          sed -i "s|\${DB_USERNAME_BASE64}|$(echo -n '${{ secrets.STAGING_DB_USERNAME }}' | base64 -w 0)|g" k8s/staging/secret.yml
+          sed -i "s|\${DB_PASSWORD_BASE64}|$(echo -n '${{ secrets.STAGING_DB_PASSWORD }}' | base64 -w 0)|g" k8s/staging/secret.yml
+          sed -i "s|\${REDIS_PASSWORD_BASE64}|$(echo -n '${{ secrets.STAGING_REDIS_PASSWORD }}' | base64 -w 0)|g" k8s/staging/secret.yml
+          sed -i "s|\${RABBITMQ_USERNAME_BASE64}|$(echo -n '${{ secrets.STAGING_RABBITMQ_USERNAME }}' | base64 -w 0)|g" k8s/staging/secret.yml
+          sed -i "s|\${RABBITMQ_PASSWORD_BASE64}|$(echo -n '${{ secrets.STAGING_RABBITMQ_PASSWORD }}' | base64 -w 0)|g" k8s/staging/secret.yml
+          sed -i "s|\${JWT_SECRET_BASE64}|$(echo -n '${{ secrets.STAGING_JWT_SECRET }}' | base64 -w 0)|g" k8s/staging/secret.yml
+          sed -i "s|\${AI_API_KEY_BASE64}|$(echo -n '${{ secrets.STAGING_AI_API_KEY }}' | base64 -w 0)|g" k8s/staging/secret.yml
+
+      - name: Inject image tag into deployment.yml
+        run: |
+          sed -i "s|\${OCIR_IMAGE}|${{ env.OCIR_REGION }}/${{ env.OCIR_REPO }}:${{ env.IMAGE_TAG }}|g" k8s/staging/deployment.yml
+
+      - name: Apply K8s manifests
+        run: |
+          kubectl apply -f k8s/staging/configmap.yml
+          kubectl apply -f k8s/staging/secret.yml
+          kubectl apply -f k8s/staging/deployment.yml
+          kubectl apply -f k8s/staging/service.yml
+          kubectl apply -f k8s/staging/hpa.yml
+
+      - name: Wait for rollout
+        run: |
+          kubectl rollout status deployment/resume-analyzer \
+            --namespace=staging \
+            --timeout=300s

@@ -1,0 +1,23 @@
+# k8s/prod/service.yml
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: resume-analyzer-service
+  namespace: prod
+  labels:
+    app: resume-analyzer
+    env: prod
+  annotations:
+    service.beta.kubernetes.io/oci-load-balancer-shape: flexible
+    service.beta.kubernetes.io/oci-load-balancer-shape-flex-min: "10"
+    service.beta.kubernetes.io/oci-load-balancer-shape-flex-max: "100"
+spec:
+  type: LoadBalancer
+  selector:
+    app: resume-analyzer
+  ports:
+    - name: http
+      protocol: TCP
+      port: 80
+      targetPort: 8080

@@ -1,0 +1,53 @@
+# =============================================================
+# .gitignore — resume-analyzer API
+# =============================================================
+
+# ----- Maven -----
+target/
+!.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
+
+# ----- IntelliJ IDEA -----
+.idea/
+*.iws
+*.iml
+*.ipr
+out/
+.idea_modules/
+
+# ----- Eclipse -----
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+
+# ----- VS Code -----
+.vscode/
+
+# ----- Secrets — NEVER commit these -----
+.env
+*.env
+!.env.example
+
+# ----- Logs -----
+logs/
+*.log
+*.log.*
+
+# ----- OS files -----
+.DS_Store
+Thumbs.db
+
+# ----- Docker -----
+.dockerignore
+
+# ----- Temp / Upload files -----
+/tmp/
+uploads/
+
+# ----- Spring Boot -----
+spring-shell.log
