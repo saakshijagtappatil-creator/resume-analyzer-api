@@ -6,15 +6,17 @@ metadata:
   name: resume-analyzer-config
   namespace: prod
 data:
-  SPRING_PROFILE: prod
+  SPRING_PROFILES_ACTIVE: prod
   RABBITMQ_HOST: rabbitmq-service
   RABBITMQ_PORT: "5672"
   RABBITMQ_VHOST: /
   REDIS_HOST: redis-service
   REDIS_PORT: "6379"
   FILE_UPLOAD_DIR: /tmp/resumes
-  AI_MODEL: claude-opus-4-6
+  AI_MODEL: claude-sonnet-4-6
   AI_BASE_URL: https://api.anthropic.com
   AI_MAX_TOKENS: "4096"
   AI_TIMEOUT_SECONDS: "60"
   JWT_EXPIRATION_MS: "86400000"
+  PROD_DB_URL: "jdbc:postgresql://ep-autumn-rice-apzzuevi.c-7.us-east-1.aws.neon.tech/neondb?sslmode=require"
+  PROD_DB_USERNAME: neondb_owner

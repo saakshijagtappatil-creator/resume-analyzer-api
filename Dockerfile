@@ -5,7 +5,7 @@
 # =============================================================
 
 # ---- Stage 1: Build ----
-FROM eclipse-temurin:17-jdk-alpine AS builder
+FROM eclipse-temurin:17-jdk AS builder
 
 WORKDIR /app
 
@@ -24,10 +24,10 @@ COPY src/ src/
 RUN ./mvnw package -DskipTests -B
 
 # ---- Stage 2: Run ----
-FROM eclipse-temurin:17-jre-alpine AS runtime
+FROM eclipse-temurin:17-jre AS runtime
 
 # Security: don't run as root
-RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+RUN groupadd -r appgroup && useradd -r -g appgroup appuser
 
 WORKDIR /app
 

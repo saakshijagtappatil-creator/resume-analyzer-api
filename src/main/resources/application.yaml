@@ -4,9 +4,8 @@ spring:
   application:
     name: resume-analyzer
   profiles:
-    active: ${SPRING_PROFILE:dev}
-  config:
-    import: optional:file:.env[.properties]
+    active: ${SPRING_PROFILES_ACTIVE:dev}
+
 
     security:
       oauth2:
