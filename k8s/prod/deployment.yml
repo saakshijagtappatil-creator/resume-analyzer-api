@@ -26,7 +26,7 @@ spec:
     spec:
       containers:
         - name: resume-analyzer
-          image: ${OCIR_IMAGE}
+          image: iad.ocir.io/idhfx11bi3y9/resume-analyzer-api:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 8080
