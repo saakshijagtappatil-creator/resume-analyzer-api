@@ -97,7 +97,7 @@ public class SecurityConfig {
         configuration.setAllowedOrigins(List.of(
                 "http://localhost:3000",
                 "http://localhost:3001",
-                "https://your-vercel-app.vercel.app"
+                "https://resume-analyzer-ui-blue.vercel.app"
         ));
         configuration.setAllowedMethods(List.of(
                 "GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"
