@@ -24,6 +24,8 @@ spec:
         app: resume-analyzer
         env: prod
     spec:
+      securityContext:
+        fsGroup: 999
       containers:
         - name: resume-analyzer
           image: iad.ocir.io/idhfx11bi3y9/resume-analyzer-api:latest
