@@ -44,42 +44,15 @@ public class AiApiClient {
 
     public AnalysisResult analyzeResume(Resume resume) {
 
-        log.info("MOCK AI — analyzing resume: {}", resume.getId());
+        log.info("Calling Claude AI for resume: {}", resume.getId());
 
-        try {
-            Thread.sleep(2000);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
+        String resumeText = pdfTextExtractor.extractText(resume.getStoredPath());
+        String prompt = buildPrompt(resumeText, resume.getJobDescription());
+        String rawResponse = callClaudeApi(prompt);
 
-        return AnalysisResult.builder()
-                .resume(resume)
-                .compatibilityScore(new BigDecimal("85.50"))
-                .extractedSkills(List.of(
-                        "Java",
-                        "Spring Boot",
-                        "PostgreSQL",
-                        "Docker",
-                        "REST APIs"))
-                .missingKeywords(List.of(
-                        "Kubernetes",
-                        "AWS",
-                        "Microservices"))
-                .suggestions(List.of(
-                        "Add quantifiable achievements to experience section",
-                        "Include cloud platform experience",
-                        "Add a professional summary at the top"))
-                .strengths(List.of(
-                        "Strong Java and Spring Boot background",
-                        "Clear project descriptions",
-                        "Relevant educational background"))
-                .experienceSummary(
-                        "Experienced Java developer with strong backend skills " +
-                                "in Spring Boot and PostgreSQL. Shows good understanding " +
-                                "of RESTful API design and database management.")
-                .modelUsed("mock-model")
-                .processingTimeMs(2000L)
-                .build();
+        AnalysisResult result = parseAiResponse(rawResponse, resume);
+        result.setProcessingTimeMs(System.currentTimeMillis());
+        return result;
     }
 
     private String callClaudeApi(String prompt) {
@@ -174,7 +147,7 @@ public class AiApiClient {
                     .path("text")
                     .asText();
 
-            JsonNode analysisJson = objectMapper.readTree(content);
+            JsonNode analysisJson = objectMapper.readTree(extractJson(content));
 
             BigDecimal score = null;
             if (!analysisJson.path("compatibilityScore").isNull()) {
@@ -203,6 +176,19 @@ public class AiApiClient {
             throw new AIServiceException(
                     "Failed to parse AI response", e);
         }
+    }
+
+    private String extractJson(String text) {
+        String trimmed = text.trim();
+        // Strip markdown code fences if present: ```json ... ``` or ``` ... ```
+        if (trimmed.startsWith("```")) {
+            int firstNewline = trimmed.indexOf('\n');
+            int lastFence = trimmed.lastIndexOf("```");
+            if (firstNewline != -1 && lastFence > firstNewline) {
+                return trimmed.substring(firstNewline + 1, lastFence).trim();
+            }
+        }
+        return trimmed;
     }
 
     private List<String> parseStringList(JsonNode node) {

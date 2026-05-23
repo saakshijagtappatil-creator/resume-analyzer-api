@@ -23,6 +23,7 @@ public interface ResumeRepository extends JpaRepository<Resume, String> {
 
     @Query("SELECT COUNT(r) > 0 FROM Resume r WHERE r.fileHash = :fileHash " +
             "AND r.user.id = :userId " +
+            "AND r.status <> com.resumeanalyzer.api.entity.Resume$Status.FAILED " +
             "AND ((:jobDescription IS NULL AND r.jobDescription IS NULL) " +
             "OR (:jobDescription IS NOT NULL AND r.jobDescription = :jobDescription))")
     boolean existsByFileHashAndUserIdAndJobDescriptionCustom(

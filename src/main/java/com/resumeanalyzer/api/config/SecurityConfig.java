@@ -4,6 +4,7 @@ import com.resumeanalyzer.api.security.AuthEntryPoint;
 import com.resumeanalyzer.api.security.JwtAuthenticationFilter;
 import com.resumeanalyzer.api.security.OAuth2AuthenticationSuccessHandler;
 import com.resumeanalyzer.api.security.OAuth2UserService;
+import com.resumeanalyzer.api.security.RateLimitFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -32,6 +33,7 @@ import java.util.List;
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final RateLimitFilter rateLimitFilter;
     private final AuthEntryPoint authEntryPoint;
     private final OAuth2UserService oAuth2UserService;
     private final OAuth2AuthenticationSuccessHandler oAuth2SuccessHandler;
@@ -64,6 +66,10 @@ public class SecurityConfig {
                         .successHandler(oAuth2SuccessHandler)
                 )
                 .authenticationProvider(authenticationProvider())
+                .addFilterBefore(
+                        rateLimitFilter,
+                        UsernamePasswordAuthenticationFilter.class
+                )
                 .addFilterBefore(
                         jwtAuthenticationFilter,
                         UsernamePasswordAuthenticationFilter.class

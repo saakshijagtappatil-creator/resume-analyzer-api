@@ -28,7 +28,7 @@ public class AuthEntryPoint implements AuthenticationEntryPoint {
             HttpServletResponse response,
             AuthenticationException authException) throws IOException {
 
-        log.error("Unauthorized request at {}: {}",
+        log.warn("Unauthorized request at {}: {}",
                 request.getRequestURI(), authException.getMessage());
 
         ApiErrorResponse errorResponse = ApiErrorResponse.builder()
