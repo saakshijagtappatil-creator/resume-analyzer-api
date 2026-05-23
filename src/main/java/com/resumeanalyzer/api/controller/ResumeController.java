@@ -13,6 +13,7 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -100,6 +101,24 @@ public class ResumeController {
                 .getUserResumes(userId);
 
         return ResponseEntity.ok(ApiResponse.success(resumes));
+    }
+
+    @GetMapping("/{resumeId}/download")
+    @Operation(summary = "Download the original PDF resume")
+    public ResponseEntity<byte[]> downloadResume(
+            @PathVariable String resumeId,
+            @AuthenticationPrincipal UserDetails userDetails) {
+
+        String userId = getUserId(userDetails);
+        log.info("Download request for resume: {} by user: {}", resumeId, userId);
+
+        ResumeService.ResumeFileData fileData = resumeService.downloadResume(resumeId, userId);
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION,
+                        "attachment; filename=\"" + fileData.filename() + "\"")
+                .contentType(MediaType.APPLICATION_PDF)
+                .body(fileData.content());
     }
 
     @DeleteMapping("/{resumeId}")

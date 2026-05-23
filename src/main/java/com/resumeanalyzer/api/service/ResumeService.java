@@ -18,4 +18,8 @@ public interface ResumeService {
     List<ResumeStatusResponse> getUserResumes(String userId);
 
     void deleteResume(String resumeId, String userId);
+
+    ResumeFileData downloadResume(String resumeId, String userId);
+
+    record ResumeFileData(byte[] content, String filename) {}
 }

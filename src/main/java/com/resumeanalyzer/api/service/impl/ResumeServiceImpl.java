@@ -140,6 +140,28 @@ public class ResumeServiceImpl implements ResumeService {
         log.info("Resume deleted: {}", resumeId);
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public ResumeFileData downloadResume(String resumeId, String userId) {
+        Resume resume = resumeRepository
+                .findByIdAndUserId(resumeId, userId)
+                .orElseThrow(() -> new ResumeNotFoundException(resumeId));
+
+        Path filePath = Paths.get(resume.getStoredPath());
+        if (!Files.exists(filePath)) {
+            log.error("Resume file not found on disk: {}", resume.getStoredPath());
+            throw new InvalidFileException("Resume file is no longer available for download");
+        }
+
+        try {
+            byte[] content = Files.readAllBytes(filePath);
+            return new ResumeFileData(content, resume.getOriginalFilename());
+        } catch (IOException e) {
+            log.error("Failed to read resume file: {}", resume.getStoredPath(), e);
+            throw new InvalidFileException("Failed to read resume file");
+        }
+    }
+
     private void validateFile(MultipartFile file) {
         if (file == null || file.isEmpty()) {
             throw new InvalidFileException("File is empty or missing");
