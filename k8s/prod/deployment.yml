@@ -61,6 +61,7 @@ spec:
               mountPath: /tmp/resumes
       volumes:
         - name: upload-dir
-          emptyDir: {}
+          persistentVolumeClaim:
+            claimName: resume-uploads-pvc
       imagePullSecrets:
         - name: ocir-secret
