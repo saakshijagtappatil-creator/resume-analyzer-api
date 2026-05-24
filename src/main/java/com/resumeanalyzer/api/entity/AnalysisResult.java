@@ -59,6 +59,9 @@ public class AnalysisResult {
     @Column(name = "experience_summary", columnDefinition = "TEXT")
     private String experienceSummary;
 
+    @Column(name = "profile_gaps", columnDefinition = "TEXT")
+    private String profileGaps;
+
     @Column(name = "raw_ai_response", columnDefinition = "TEXT")
     private String rawAiResponse;
 

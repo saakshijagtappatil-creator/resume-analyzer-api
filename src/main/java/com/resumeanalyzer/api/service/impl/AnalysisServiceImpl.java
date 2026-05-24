@@ -172,6 +172,7 @@ public class AnalysisServiceImpl implements AnalysisService {
                 .suggestions(cachedResult.getSuggestions())
                 .strengths(cachedResult.getStrengths())
                 .experienceSummary(cachedResult.getExperienceSummary())
+                .profileGaps(cachedResult.getProfileGaps())
                 .modelUsed(cachedResult.getModelUsed())
                 .processingTimeMs(0L)
                 .build();
@@ -204,6 +205,7 @@ public class AnalysisServiceImpl implements AnalysisService {
                 .suggestions(result.getSuggestions())
                 .strengths(result.getStrengths())
                 .experienceSummary(result.getExperienceSummary())
+                .profileGaps(result.getProfileGaps())
                 .modelUsed(result.getModelUsed())
                 .processingTimeMs(result.getProcessingTimeMs())
                 .createdAt(result.getCreatedAt())

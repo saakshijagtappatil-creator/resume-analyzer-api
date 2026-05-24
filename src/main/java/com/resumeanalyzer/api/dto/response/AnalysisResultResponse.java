@@ -24,6 +24,7 @@ public class AnalysisResultResponse {
     private List<String> suggestions;
     private List<String> strengths;
     private String experienceSummary;
+    private String profileGaps;
     private String modelUsed;
     private Long processingTimeMs;
     private Instant createdAt;

@@ -105,12 +105,13 @@ public class AiApiClient {
                 
                 Required JSON format:
                 {
-                  "compatibilityScore": <number 0-100>,
+                  "compatibilityScore": <number 0-100 or null>,
                   "extractedSkills": ["skill1", "skill2"],
                   "missingKeywords": ["keyword1", "keyword2"],
                   "suggestions": ["suggestion1", "suggestion2"],
                   "strengths": ["strength1", "strength2"],
-                  "experienceSummary": "summary text"
+                  "experienceSummary": "A concise, factual summary of the candidate's experience, background, and qualifications based solely on what is present in the resume.",
+                  "profileGaps": "A clear description of the specific skills, experience, or qualifications that the candidate is missing relative to the job description. Only populate this when a job description is provided; otherwise return null."
                 }
                 
                 """);
@@ -128,8 +129,9 @@ public class AiApiClient {
                     """);
         } else {
             prompt.append("""
-                    No job description provided. Set compatibilityScore to null.
-                    Focus on extracting skills, strengths, and general improvement 
+                    No job description provided. Set compatibilityScore to null \
+                    and profileGaps to null.
+                    Focus on extracting skills, strengths, and general improvement \
                     suggestions for the resume.
                     """);
         }
@@ -167,6 +169,10 @@ public class AiApiClient {
                             analysisJson.path("strengths")))
                     .experienceSummary(
                             analysisJson.path("experienceSummary").asText())
+                    .profileGaps(
+                            analysisJson.path("profileGaps").isNull()
+                                    ? null
+                                    : analysisJson.path("profileGaps").asText())
                     .rawAiResponse(rawResponse)
                     .modelUsed(model)
                     .build();
