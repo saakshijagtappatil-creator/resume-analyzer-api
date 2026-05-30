@@ -1,0 +1,142 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches:
+      - main
+
+env:
+  IMAGE: iad.ocir.io/idhfx11bi3y9/resume-analyzer-api
+
+jobs:
+
+  # ── 1. BUILD ────────────────────────────────────────────────────────────────
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17 (Temurin)
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Cache Maven dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-
+
+      - name: Build with Maven
+        run: ./mvnw package -DskipTests -B
+
+      - name: Upload JAR artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-jar
+          path: target/*.jar
+          retention-days: 1
+
+      - name: Write build summary
+        if: always()
+        run: |
+          echo "## Build" >> $GITHUB_STEP_SUMMARY
+          echo "| Field | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|---|---|" >> $GITHUB_STEP_SUMMARY
+          echo "| Status | ${{ job.status == 'success' && 'Passed' || 'Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Commit | \`${{ github.sha }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Branch | \`${{ github.ref_name }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Triggered by | @${{ github.actor }} |" >> $GITHUB_STEP_SUMMARY
+
+  # ── 2. DOCKER ───────────────────────────────────────────────────────────────
+  docker:
+    name: Docker
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download JAR artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: app-jar
+          path: target/
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to OCIR
+        uses: docker/login-action@v3
+        with:
+          registry: iad.ocir.io
+          username: ${{ secrets.OCIR_USERNAME }}
+          password: ${{ secrets.OCIR_TOKEN }}
+
+      - name: Build and push image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          platforms: linux/amd64
+          push: true
+          tags: |
+            ${{ env.IMAGE }}:latest
+            ${{ env.IMAGE }}:${{ github.sha }}
+
+      - name: Write docker summary
+        if: always()
+        run: |
+          echo "## Docker" >> $GITHUB_STEP_SUMMARY
+          echo "| Field | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|---|---|" >> $GITHUB_STEP_SUMMARY
+          echo "| Status | ${{ job.status == 'success' && 'Pushed' || 'Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Image | \`${{ env.IMAGE }}:latest\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| SHA tag | \`${{ env.IMAGE }}:${{ github.sha }}\` |" >> $GITHUB_STEP_SUMMARY
+
+  # ── 3. DEPLOY ───────────────────────────────────────────────────────────────
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+    needs: docker
+
+    steps:
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v3
+
+      - name: Configure kubeconfig
+        run: |
+          mkdir -p $HOME/.kube
+          echo "${{ secrets.KUBECONFIG }}" | base64 -d > $HOME/.kube/config
+          chmod 600 $HOME/.kube/config
+
+      - name: Rollout restart
+        run: kubectl rollout restart deployment/resume-analyzer -n prod
+
+      - name: Wait for rollout
+        run: kubectl rollout status deployment/resume-analyzer -n prod --timeout=5m
+
+      - name: Verify pods
+        id: verify
+        run: |
+          kubectl get pods -n prod
+          READY=$(kubectl get pods -n prod -l app=resume-analyzer \
+            --no-headers | grep -c "Running" || true)
+          echo "ready=$READY" >> $GITHUB_OUTPUT
+
+      - name: Write deploy summary
+        if: always()
+        run: |
+          echo "## Deploy" >> $GITHUB_STEP_SUMMARY
+          echo "| Field | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|---|---|" >> $GITHUB_STEP_SUMMARY
+          echo "| Status | ${{ job.status == 'success' && 'Live' || 'Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Namespace | \`prod\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Running pods | ${{ steps.verify.outputs.ready }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Deployed image | \`${{ env.IMAGE }}:${{ github.sha }}\` |" >> $GITHUB_STEP_SUMMARY
