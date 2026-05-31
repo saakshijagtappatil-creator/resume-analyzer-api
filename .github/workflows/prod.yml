@@ -78,7 +78,7 @@ jobs:
         with:
           registry: iad.ocir.io
           username: ${{ secrets.OCIR_USERNAME }}
-          password: ${{ secrets.OCIR_TOKEN }}
+          password: ${{ secrets.OCIR_AUTH_TOKEN }}
 
       - name: Build and push image
         uses: docker/build-push-action@v6
