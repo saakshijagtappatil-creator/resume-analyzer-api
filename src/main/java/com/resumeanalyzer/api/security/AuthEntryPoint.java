@@ -26,6 +26,14 @@ public class AuthEntryPoint implements AuthenticationEntryPoint {
         "/api/", "/auth/", "/actuator/", "/swagger-ui", "/v3/api-docs"
     };
 
+    // Known scanner/exploit paths — silently drop with 404, no log
+    private static final String[] BOT_SCAN_SUFFIXES = {
+        ".env", ".env.local", ".env.production", ".env.backup",
+        "phpunit", "eval-stdin.php", ".php", "wp-login", "wp-admin",
+        "xmlrpc.php", "config.php", "setup.php", "install.php",
+        ".git/", ".svn/", ".DS_Store", "composer.json", "package.json"
+    };
+
     @Override
     public void commence(
             HttpServletRequest request,
@@ -45,6 +53,14 @@ public class AuthEntryPoint implements AuthenticationEntryPoint {
         if (!isApiPath) {
             response.setStatus(HttpStatus.NOT_FOUND.value());
             return;
+        }
+
+        String lowerPath = path.toLowerCase();
+        for (String suffix : BOT_SCAN_SUFFIXES) {
+            if (lowerPath.contains(suffix)) {
+                response.setStatus(HttpStatus.NOT_FOUND.value());
+                return;
+            }
         }
 
         log.warn("Unauthorized request at {}: {}", path, authException.getMessage());

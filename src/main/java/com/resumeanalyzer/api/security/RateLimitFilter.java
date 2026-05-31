@@ -23,6 +23,14 @@ public class RateLimitFilter extends OncePerRequestFilter {
     private static final int MAX_REQUESTS_PER_MINUTE = 60;
     private static final long WINDOW_MS = 60_000L;
 
+    // Internal cluster and loopback ranges — never rate-limited
+    private static final String[] TRUSTED_PREFIXES = {
+        "10.", "172.16.", "172.17.", "172.18.", "172.19.", "172.20.",
+        "172.21.", "172.22.", "172.23.", "172.24.", "172.25.", "172.26.",
+        "172.27.", "172.28.", "172.29.", "172.30.", "172.31.",
+        "192.168.", "127."
+    };
+
     private final Map<String, Deque<Long>> requestTimestamps = new ConcurrentHashMap<>();
 
     @Override
@@ -30,6 +38,13 @@ public class RateLimitFilter extends OncePerRequestFilter {
                                     HttpServletResponse response,
                                     FilterChain chain) throws ServletException, IOException {
         String ip = getClientIp(request);
+
+        for (String prefix : TRUSTED_PREFIXES) {
+            if (ip.startsWith(prefix)) {
+                chain.doFilter(request, response);
+                return;
+            }
+        }
         long now = System.currentTimeMillis();
 
         Deque<Long> timestamps = requestTimestamps
