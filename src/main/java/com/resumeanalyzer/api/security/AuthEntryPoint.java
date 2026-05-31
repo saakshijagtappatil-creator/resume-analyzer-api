@@ -28,10 +28,24 @@ public class AuthEntryPoint implements AuthenticationEntryPoint {
 
     // Known scanner/exploit paths — silently drop with 404, no log
     private static final String[] BOT_SCAN_SUFFIXES = {
+        // Credential/config file scanners
         ".env", ".env.local", ".env.production", ".env.backup",
+        "config.php", "setup.php", "install.php", "composer.json", "package.json",
+        "client_secret", ".git/", ".svn/", ".DS_Store",
+        // PHP/WordPress scanners
         "phpunit", "eval-stdin.php", ".php", "wp-login", "wp-admin",
-        "xmlrpc.php", "config.php", "setup.php", "install.php",
-        ".git/", ".svn/", ".DS_Store", "composer.json", "package.json"
+        "xmlrpc.php",
+        // API version/info probes (Kubernetes, Harbor, Portainer, etc.)
+        "/version", "systeminfo", "/environment", "check-version",
+        "hoverfly", "/cluster/", "cluster/summary",
+        // Generic info/status probes not in our API surface
+        "/v1/info", "/v2/info", "/v3/info",
+        "/v1/about", "/v2/about", "/v3/about",
+        "/v3/meta", "/system/status",
+        // Spring Cloud Gateway / actuator scanner probes
+        "gateway/routes", "gateway/globalfilters",
+        // i18n/translation product probes
+        "translation/products"
     };
 
     @Override
