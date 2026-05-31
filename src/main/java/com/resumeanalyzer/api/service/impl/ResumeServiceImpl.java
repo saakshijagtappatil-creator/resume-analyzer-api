@@ -9,6 +9,7 @@ import com.resumeanalyzer.api.exception.ResumeNotFoundException;
 import com.resumeanalyzer.api.messaging.producer.ResumeAnalysisProducer;
 import com.resumeanalyzer.api.repository.ResumeRepository;
 import com.resumeanalyzer.api.repository.UserRepository;
+import com.resumeanalyzer.api.service.OciStorageService;
 import com.resumeanalyzer.api.service.ResumeService;
 import com.resumeanalyzer.api.util.PdfTextExtractor;
 import lombok.RequiredArgsConstructor;
@@ -21,11 +22,6 @@ import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -39,9 +35,7 @@ public class ResumeServiceImpl implements ResumeService {
     private final UserRepository userRepository;
     private final ResumeAnalysisProducer resumeAnalysisProducer;
     private final PdfTextExtractor pdfTextExtractor;
-
-    @Value("${app.file.upload-dir}")
-    private String uploadDir;
+    private final OciStorageService ociStorageService;
 
     @Value("${app.file.max-size-bytes}")
     private long maxSizeBytes;
@@ -75,12 +69,12 @@ public class ResumeServiceImpl implements ResumeService {
                     .orElseThrow(() -> new ResumeNotFoundException(fileHash));
         }
 
-        String storedPath = storeFile(file, userId);
+        String objectKey = ociStorageService.uploadFile(UUID.randomUUID().toString(), file);
 
         Resume resume = Resume.builder()
                 .user(user)
                 .originalFilename(file.getOriginalFilename())
-                .storedPath(storedPath)
+                .storedPath(objectKey)
                 .fileSizeBytes(file.getSize())
                 .fileHash(fileHash)
                 .jobDescription(request.getJobDescription())
@@ -129,12 +123,7 @@ public class ResumeServiceImpl implements ResumeService {
                 .findByIdAndUserId(resumeId, userId)
                 .orElseThrow(() -> new ResumeNotFoundException(resumeId));
 
-        try {
-            Files.deleteIfExists(Paths.get(resume.getStoredPath()));
-            log.info("Deleted file: {}", resume.getStoredPath());
-        } catch (IOException e) {
-            log.warn("Could not delete file: {}", resume.getStoredPath());
-        }
+        ociStorageService.deleteFile(resume.getStoredPath());
 
         resumeRepository.delete(resume);
         log.info("Resume deleted: {}", resumeId);
@@ -147,19 +136,8 @@ public class ResumeServiceImpl implements ResumeService {
                 .findByIdAndUserId(resumeId, userId)
                 .orElseThrow(() -> new ResumeNotFoundException(resumeId));
 
-        Path filePath = Paths.get(resume.getStoredPath());
-        if (!Files.exists(filePath)) {
-            log.error("Resume file not found on disk: {}", resume.getStoredPath());
-            throw new InvalidFileException("Resume file is no longer available for download");
-        }
-
-        try {
-            byte[] content = Files.readAllBytes(filePath);
-            return new ResumeFileData(content, resume.getOriginalFilename());
-        } catch (IOException e) {
-            log.error("Failed to read resume file: {}", resume.getStoredPath(), e);
-            throw new InvalidFileException("Failed to read resume file");
-        }
+        byte[] content = ociStorageService.downloadFile(resume.getStoredPath());
+        return new ResumeFileData(content, resume.getOriginalFilename());
     }
 
     private void validateFile(MultipartFile file) {
@@ -176,26 +154,6 @@ public class ResumeServiceImpl implements ResumeService {
         if (contentType == null || !contentType.equals(allowedContentType)) {
             throw new InvalidFileException(
                     "Invalid file type. Only PDF files are allowed");
-        }
-    }
-
-    private String storeFile(MultipartFile file, String userId) {
-        try {
-            Path uploadPath = Paths.get(uploadDir, userId);
-            Files.createDirectories(uploadPath);
-
-            String filename = UUID.randomUUID() + "_" + file.getOriginalFilename();
-            Path filePath = uploadPath.resolve(filename);
-
-            Files.copy(file.getInputStream(), filePath,
-                    StandardCopyOption.REPLACE_EXISTING);
-
-            log.info("File stored at: {}", filePath);
-            return filePath.toString();
-
-        } catch (IOException e) {
-            throw new InvalidFileException(
-                    "Could not store file: " + e.getMessage());
         }
     }
 

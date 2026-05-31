@@ -20,3 +20,6 @@ data:
   JWT_EXPIRATION_MS: "86400000"
   PROD_DB_URL: "jdbc:postgresql://ep-autumn-rice-apzzuevi.c-7.us-east-1.aws.neon.tech/neondb?sslmode=require"
   PROD_DB_USERNAME: neondb_owner
+  OCI_NAMESPACE: idhfx11bi3y9
+  OCI_BUCKET_NAME: resume-analyzer-files
+  OCI_REGION: us-ashburn-1

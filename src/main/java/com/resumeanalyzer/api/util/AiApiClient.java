@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.resumeanalyzer.api.entity.AnalysisResult;
 import com.resumeanalyzer.api.entity.Resume;
 import com.resumeanalyzer.api.exception.AIServiceException;
+import com.resumeanalyzer.api.service.OciStorageService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -26,6 +27,7 @@ public class AiApiClient {
     private final WebClient.Builder webClientBuilder;
     private final ObjectMapper objectMapper;
     private final PdfTextExtractor pdfTextExtractor;
+    private final OciStorageService ociStorageService;
 
     @Value("${app.ai.api-key}")
     private String apiKey;
@@ -43,10 +45,10 @@ public class AiApiClient {
     private int timeoutSeconds;
 
     public AnalysisResult analyzeResume(Resume resume) {
-
         log.info("Calling Claude AI for resume: {}", resume.getId());
 
-        String resumeText = pdfTextExtractor.extractText(resume.getStoredPath());
+        byte[] pdfBytes = ociStorageService.downloadFile(resume.getStoredPath());
+        String resumeText = pdfTextExtractor.extractTextFromBytes(pdfBytes);
         String prompt = buildPrompt(resumeText, resume.getJobDescription());
         String rawResponse = callClaudeApi(prompt);
 
@@ -100,9 +102,9 @@ public class AiApiClient {
         prompt.append("""
                 You are an expert resume analyzer and career coach.
                 Analyze the following resume and provide a detailed assessment.
-                
+
                 You MUST respond with valid JSON only. No other text before or after.
-                
+
                 Required JSON format:
                 {
                   "compatibilityScore": <number 0-100 or null>,
@@ -113,7 +115,7 @@ public class AiApiClient {
                   "experienceSummary": "A concise, factual summary of the candidate's experience, background, and qualifications based solely on what is present in the resume.",
                   "profileGaps": "A clear description of the specific skills, experience, or qualifications that the candidate is missing relative to the job description. Only populate this when a job description is provided; otherwise return null."
                 }
-                
+
                 """);
 
         prompt.append("RESUME:\n").append(resumeText).append("\n\n");
@@ -123,8 +125,8 @@ public class AiApiClient {
                     JOB DESCRIPTION:
                     """).append(jobDescription).append("\n\n");
             prompt.append("""
-                    Calculate the compatibility score based on how well the resume 
-                    matches the job description. Include missing keywords from the 
+                    Calculate the compatibility score based on how well the resume
+                    matches the job description. Include missing keywords from the
                     job description that are not in the resume.
                     """);
         } else {
@@ -186,7 +188,6 @@ public class AiApiClient {
 
     private String extractJson(String text) {
         String trimmed = text.trim();
-        // Strip markdown code fences if present: ```json ... ``` or ``` ... ```
         if (trimmed.startsWith("```")) {
             int firstNewline = trimmed.indexOf('\n');
             int lastFence = trimmed.lastIndexOf("```");

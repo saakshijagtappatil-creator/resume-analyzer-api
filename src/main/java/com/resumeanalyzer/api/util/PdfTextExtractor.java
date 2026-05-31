@@ -24,24 +24,7 @@ public class PdfTextExtractor {
         try (PDDocument document = PDDocument.load(
                 Files.newInputStream(Paths.get(filePath)))) {
 
-            if (document.isEncrypted()) {
-                throw new InvalidFileException(
-                        "PDF is encrypted and cannot be processed");
-            }
-
-            PDFTextStripper stripper = new PDFTextStripper();
-            stripper.setSortByPosition(true);
-
-            String text = stripper.getText(document);
-
-            if (text == null || text.isBlank()) {
-                throw new InvalidFileException(
-                        "Could not extract text from PDF. " +
-                                "The file may be scanned or image-based");
-            }
-
-            log.info("Successfully extracted {} characters from PDF", text.length());
-            return text.trim();
+            return extractTextFromDocument(document, filePath);
 
         } catch (InvalidFileException e) {
             throw e;
@@ -50,6 +33,40 @@ public class PdfTextExtractor {
             throw new InvalidFileException(
                     "Failed to read PDF file: " + e.getMessage());
         }
+    }
+
+    public String extractTextFromBytes(byte[] pdfBytes) {
+        log.info("Extracting text from PDF bytes ({} bytes)", pdfBytes.length);
+
+        try (PDDocument document = PDDocument.load(pdfBytes)) {
+            return extractTextFromDocument(document, "byte-array");
+        } catch (InvalidFileException e) {
+            throw e;
+        } catch (IOException e) {
+            log.error("Failed to extract text from PDF bytes", e);
+            throw new InvalidFileException(
+                    "Failed to read PDF file: " + e.getMessage());
+        }
+    }
+
+    private String extractTextFromDocument(PDDocument document, String source) throws IOException {
+        if (document.isEncrypted()) {
+            throw new InvalidFileException("PDF is encrypted and cannot be processed");
+        }
+
+        PDFTextStripper stripper = new PDFTextStripper();
+        stripper.setSortByPosition(true);
+
+        String text = stripper.getText(document);
+
+        if (text == null || text.isBlank()) {
+            throw new InvalidFileException(
+                    "Could not extract text from PDF. " +
+                    "The file may be scanned or image-based");
+        }
+
+        log.info("Successfully extracted {} characters from PDF ({})", text.length(), source);
+        return text.trim();
     }
 
     public String generateFileHash(MultipartFile file) {

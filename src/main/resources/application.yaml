@@ -57,6 +57,14 @@ app:
     upload-dir: ${FILE_UPLOAD_DIR:/tmp/resumes}
     max-size-bytes: 5242880
     allowed-content-type: application/pdf
+  oci:
+    namespace: ${OCI_NAMESPACE}
+    bucket-name: ${OCI_BUCKET_NAME:resume-analyzer-files}
+    region: ${OCI_REGION:us-ashburn-1}
+    user-ocid: ${OCI_USER_OCID}
+    tenancy-ocid: ${OCI_TENANCY_OCID}
+    fingerprint: ${OCI_FINGERPRINT}
+    private-key: ${OCI_PRIVATE_KEY}
   oauth2:
       redirect-uri: ${OAUTH2_REDIRECT_URI:http://localhost:3000/auth/callback}
 

@@ -58,12 +58,5 @@ spec:
             initialDelaySeconds: 30
             periodSeconds: 10
             failureThreshold: 3
-          volumeMounts:
-            - name: upload-dir
-              mountPath: /tmp/resumes
-      volumes:
-        - name: upload-dir
-          persistentVolumeClaim:
-            claimName: resume-uploads-pvc
       imagePullSecrets:
         - name: ocir-secret
