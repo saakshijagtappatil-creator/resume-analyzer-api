@@ -54,6 +54,13 @@ management:
       application: resume-analyzer
       environment: production
 
+management:
+  otlp:
+    metrics:
+      export:
+        resource-attributes:
+          service.name: resume-analyzer
+
 app:
   grafana:
     otlp-url: ${GRAFANA_OTLP_URL:}
