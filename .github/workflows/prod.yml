@@ -7,6 +7,7 @@ on:
 
 env:
   IMAGE: iad.ocir.io/idhfx11bi3y9/resume-analyzer-api
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
 
