@@ -1,0 +1,65 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE;MODE=PostgreSQL;NON_KEYWORDS=VALUE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+  flyway:
+    enabled: false
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.actuate.autoconfigure.data.redis.RedisReactiveHealthContributorAutoConfiguration
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: test-client-id
+            client-secret: test-client-secret
+            scope: email,profile
+
+app:
+  jwt:
+    secret: testjwtsecretkeymustbeatleast256bitsforhmacsha256algorithmtesting1234
+    expiration-ms: 86400000
+  ai:
+    api-key: placeholder
+    model: claude-opus-4-6
+    base-url: https://api.anthropic.com
+    max-tokens: 4096
+    timeout-seconds: 60
+  file:
+    upload-dir: /tmp/test-resumes
+    max-size-bytes: 5242880
+    allowed-content-type: application/pdf
+  oauth2:
+    redirect-uri: http://localhost:3000/auth/callback
+  oci:
+    namespace: test-namespace
+    bucket-name: test-bucket
+    region: us-ashburn-1
+    user-ocid: ocid1.user.oc1..test
+    tenancy-ocid: ocid1.tenancy.oc1..test
+    fingerprint: aa:bb:cc:dd:ee:ff
+    private-key: "-----BEGIN RSA PRIVATE KEY-----\nMIIEowIBAAKCAQEAtest\n-----END RSA PRIVATE KEY-----"
+
+management:
+  health:
+    redis:
+      enabled: false
+    rabbit:
+      enabled: false
+
+logging:
+  level:
+    root: WARN
+    com.resumeanalyzer: WARN
+    org.springframework.security: WARN
