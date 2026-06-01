@@ -53,9 +53,7 @@ public class MetricsConfig {
 
             @Override
             public Map<String, String> headers() {
-                String encoded = Base64.getEncoder().encodeToString(
-                        (username + ":" + password).getBytes(StandardCharsets.UTF_8));
-                return Map.of("Authorization", "Basic " + encoded);
+                return Map.of("Authorization", "Bearer " + password);
             }
         };
 
