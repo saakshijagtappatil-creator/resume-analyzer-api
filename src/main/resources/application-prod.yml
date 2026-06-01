@@ -56,10 +56,9 @@ management:
 
 app:
   grafana:
-    push-url: ${GRAFANA_PUSH_URL:}
+    otlp-url: ${GRAFANA_OTLP_URL:}
     username: ${GRAFANA_USER:}
     password: ${GRAFANA_PASSWORD:}
-    push-interval-ms: 60000
 
 springdoc:
   swagger-ui:
