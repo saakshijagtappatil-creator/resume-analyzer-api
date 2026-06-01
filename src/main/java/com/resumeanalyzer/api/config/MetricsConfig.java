@@ -10,16 +10,11 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import java.nio.charset.StandardCharsets;
 import java.time.Duration;
-import java.util.Base64;
 import java.util.Map;
 
 @Configuration
 public class MetricsConfig {
-
-    @Value("${app.grafana.username:}")
-    private String username;
 
     @Value("${app.grafana.password:}")
     private String password;
@@ -41,9 +36,6 @@ public class MetricsConfig {
     @Bean
     @ConditionalOnProperty(name = "app.grafana.otlp-url")
     public OtlpMeterRegistry otlpMeterRegistry(Clock clock) {
-        String encoded = Base64.getEncoder().encodeToString(
-                (username + ":" + password).getBytes(StandardCharsets.UTF_8));
-
         OtlpConfig config = new OtlpConfig() {
             @Override
             public String get(String key) { return null; }
@@ -56,7 +48,8 @@ public class MetricsConfig {
 
             @Override
             public Map<String, String> headers() {
-                return Map.of("Authorization", "Basic " + encoded);
+                // Grafana Cloud OTLP gateway uses Bearer auth (service account token)
+                return Map.of("Authorization", "Bearer " + password);
             }
         };
 
