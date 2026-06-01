@@ -49,6 +49,17 @@ management:
   endpoint:
     health:
       show-details: when-authorized
+  metrics:
+    tags:
+      application: resume-analyzer
+      environment: production
+
+app:
+  grafana:
+    push-url: ${GRAFANA_PUSH_URL:}
+    username: ${GRAFANA_USER:}
+    password: ${GRAFANA_PASSWORD:}
+    push-interval-ms: 60000
 
 springdoc:
   swagger-ui:

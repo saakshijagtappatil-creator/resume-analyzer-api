@@ -23,3 +23,4 @@ data:
   OCI_NAMESPACE: idhfx11bi3y9
   OCI_BUCKET_NAME: resume-analyzer-files
   OCI_REGION: us-ashburn-1
+  GRAFANA_PUSH_URL: https://prometheus-prod-67-prod-us-west-0.grafana.net/api/v1/push
