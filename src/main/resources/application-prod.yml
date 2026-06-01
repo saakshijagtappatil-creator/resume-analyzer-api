@@ -53,8 +53,6 @@ management:
     tags:
       application: resume-analyzer
       environment: production
-
-management:
   otlp:
     metrics:
       export:
