@@ -10,8 +10,52 @@ env:
 
 jobs:
 
-  # ── 1. BUILD ────────────────────────────────────────────────────────────────
+  # ── 1. TEST ─────────────────────────────────────────────────────────────────
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Set up Java 17 (Temurin)
+        uses: actions/setup-java@v5
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Cache Maven dependencies
+        uses: actions/cache@v5
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-
+
+      - name: Run tests
+        run: ./mvnw test -B
+
+      - name: Upload Surefire reports
+        if: always()
+        uses: actions/upload-artifact@v5
+        with:
+          name: surefire-reports
+          path: target/surefire-reports/
+          retention-days: 7
+
+      - name: Write test summary
+        if: always()
+        run: |
+          echo "## Tests" >> $GITHUB_STEP_SUMMARY
+          echo "| Field | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|---|---|" >> $GITHUB_STEP_SUMMARY
+          echo "| Status | ${{ job.status == 'success' && 'Passed' || 'Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Commit | \`${{ github.sha }}\` |" >> $GITHUB_STEP_SUMMARY
+
+  # ── 2. BUILD ────────────────────────────────────────────────────────────────
   build:
+    needs: test
     name: Build
     runs-on: ubuntu-latest
 
