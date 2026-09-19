@@ -5,7 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.resumeanalyzer.api.entity.AnalysisResult;
 import com.resumeanalyzer.api.entity.Resume;
 import com.resumeanalyzer.api.exception.AIServiceException;
-import com.resumeanalyzer.api.service.OciStorageService;
+import com.resumeanalyzer.api.service.StorageService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -27,7 +27,7 @@ public class AiApiClient {
     private final WebClient.Builder webClientBuilder;
     private final ObjectMapper objectMapper;
     private final PdfTextExtractor pdfTextExtractor;
-    private final OciStorageService ociStorageService;
+    private final StorageService storageService;
 
     @Value("${app.ai.api-key}")
     private String apiKey;
@@ -47,7 +47,7 @@ public class AiApiClient {
     public AnalysisResult analyzeResume(Resume resume) {
         log.info("Calling Claude AI for resume: {}", resume.getId());
 
-        byte[] pdfBytes = ociStorageService.downloadFile(resume.getStoredPath());
+        byte[] pdfBytes = storageService.downloadFile(resume.getStoredPath());
         String resumeText = pdfTextExtractor.extractTextFromBytes(pdfBytes);
         String prompt = buildPrompt(resumeText, resume.getJobDescription());
         String rawResponse = callClaudeApi(prompt);
