@@ -5,26 +5,25 @@
 # =============================================================
 
 # ---- Stage 1: Build ----
-FROM eclipse-temurin:17-jdk AS builder
+FROM --platform=linux/amd64 maven:3.9.6-eclipse-temurin-17 AS builder
 
 WORKDIR /app
 
-# Copy Maven wrapper and pom.xml first (layer caching)
-COPY .mvn/ .mvn/
-COPY mvnw pom.xml ./
+# Copy pom.xml first (layer caching)
+COPY pom.xml .
 
 # Download dependencies separately so this layer is cached
 # unless pom.xml changes
-RUN ./mvnw dependency:go-offline -B
+RUN mvn dependency:go-offline -B
 
 # Copy source code
 COPY src/ src/
 
 # Build, skip tests (tests run in CI before Docker build)
-RUN ./mvnw package -DskipTests -B
+RUN mvn package -DskipTests -B
 
 # ---- Stage 2: Run ----
-FROM eclipse-temurin:17-jre AS runtime
+FROM --platform=linux/amd64 eclipse-temurin:17-jre AS runtime
 
 # Security: don't run as root
 RUN groupadd -r appgroup && useradd -r -g appgroup appuser

@@ -12,6 +12,7 @@ import com.resumeanalyzer.api.exception.InvalidFileException;
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -21,7 +22,8 @@ import java.nio.charset.StandardCharsets;
 
 @Slf4j
 @Service
-public class OciStorageService {
+@ConditionalOnProperty(name = "oci.enabled", havingValue = "true")
+public class OciStorageService implements StorageService {
 
     @Value("${app.oci.namespace}")
     private String namespace;
@@ -63,6 +65,7 @@ public class OciStorageService {
         log.info("OCI Object Storage client initialized for bucket: {}", bucketName);
     }
 
+    @Override
     public String uploadFile(String resumeId, MultipartFile file) {
         String objectKey = "resumes/" + resumeId;
         try {
@@ -87,6 +90,7 @@ public class OciStorageService {
         }
     }
 
+    @Override
     public byte[] downloadFile(String objectKey) {
         try {
             GetObjectRequest request = GetObjectRequest.builder()
@@ -109,6 +113,7 @@ public class OciStorageService {
         }
     }
 
+    @Override
     public void deleteFile(String objectKey) {
         try {
             DeleteObjectRequest request = DeleteObjectRequest.builder()

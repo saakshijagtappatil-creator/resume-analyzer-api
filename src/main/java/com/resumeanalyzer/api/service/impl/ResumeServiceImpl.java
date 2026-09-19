@@ -9,7 +9,7 @@ import com.resumeanalyzer.api.exception.ResumeNotFoundException;
 import com.resumeanalyzer.api.messaging.producer.ResumeAnalysisProducer;
 import com.resumeanalyzer.api.repository.ResumeRepository;
 import com.resumeanalyzer.api.repository.UserRepository;
-import com.resumeanalyzer.api.service.OciStorageService;
+import com.resumeanalyzer.api.service.StorageService;
 import com.resumeanalyzer.api.service.ResumeService;
 import com.resumeanalyzer.api.util.PdfTextExtractor;
 import lombok.RequiredArgsConstructor;
@@ -35,7 +35,7 @@ public class ResumeServiceImpl implements ResumeService {
     private final UserRepository userRepository;
     private final ResumeAnalysisProducer resumeAnalysisProducer;
     private final PdfTextExtractor pdfTextExtractor;
-    private final OciStorageService ociStorageService;
+    private final StorageService storageService;
 
     @Value("${app.file.max-size-bytes}")
     private long maxSizeBytes;
@@ -69,7 +69,7 @@ public class ResumeServiceImpl implements ResumeService {
                     .orElseThrow(() -> new ResumeNotFoundException(fileHash));
         }
 
-        String objectKey = ociStorageService.uploadFile(UUID.randomUUID().toString(), file);
+        String objectKey = storageService.uploadFile(UUID.randomUUID().toString(), file);
 
         Resume resume = Resume.builder()
                 .user(user)
@@ -123,7 +123,7 @@ public class ResumeServiceImpl implements ResumeService {
                 .findByIdAndUserId(resumeId, userId)
                 .orElseThrow(() -> new ResumeNotFoundException(resumeId));
 
-        ociStorageService.deleteFile(resume.getStoredPath());
+        storageService.deleteFile(resume.getStoredPath());
 
         resumeRepository.delete(resume);
         log.info("Resume deleted: {}", resumeId);
@@ -136,7 +136,7 @@ public class ResumeServiceImpl implements ResumeService {
                 .findByIdAndUserId(resumeId, userId)
                 .orElseThrow(() -> new ResumeNotFoundException(resumeId));
 
-        byte[] content = ociStorageService.downloadFile(resume.getStoredPath());
+        byte[] content = storageService.downloadFile(resume.getStoredPath());
         return new ResumeFileData(content, resume.getOriginalFilename());
     }
 

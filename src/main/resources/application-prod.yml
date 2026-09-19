@@ -74,3 +74,6 @@ springdoc:
   api-docs:
     enabled: false
 
+
+oci:
+  enabled: false

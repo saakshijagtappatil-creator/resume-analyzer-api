@@ -2,7 +2,7 @@ package com.resumeanalyzer.api;
 
 import com.rabbitmq.client.ConnectionFactory;
 import com.resumeanalyzer.api.messaging.producer.ResumeAnalysisProducer;
-import com.resumeanalyzer.api.service.OciStorageService;
+import com.resumeanalyzer.api.service.StorageService;
 import com.resumeanalyzer.api.util.AiApiClient;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -20,7 +20,7 @@ class ApiApplicationTests {
     @MockBean ReactiveRedisConnectionFactory reactiveRedisConnectionFactory;
     @MockBean AiApiClient aiApiClient;
     @MockBean ResumeAnalysisProducer resumeAnalysisProducer;
-    @MockBean OciStorageService ociStorageService;
+    @MockBean StorageService storageService;
 
     @Test
     void contextLoads() {

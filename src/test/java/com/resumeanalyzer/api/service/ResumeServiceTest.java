@@ -36,7 +36,7 @@ class ResumeServiceTest {
     @Mock UserRepository userRepository;
     @Mock ResumeAnalysisProducer resumeAnalysisProducer;
     @Mock PdfTextExtractor pdfTextExtractor;
-    @Mock OciStorageService ociStorageService;
+    @Mock StorageService storageService;
     @InjectMocks ResumeServiceImpl resumeService;
 
     private static final String USER_ID = "user-uuid-1";
@@ -81,7 +81,7 @@ class ResumeServiceTest {
         when(pdfTextExtractor.generateFileHash(file)).thenReturn("hash123");
         when(resumeRepository.existsByFileHashAndUserIdAndJobDescriptionCustom(
                 "hash123", USER_ID, null)).thenReturn(false);
-        when(ociStorageService.uploadFile(any(), any())).thenReturn("resumes/resume-uuid-1");
+        when(storageService.uploadFile(any(), any())).thenReturn("resumes/resume-uuid-1");
         when(resumeRepository.save(any(Resume.class))).thenReturn(savedResume);
 
         ResumeStatusResponse response = resumeService.uploadResume(file, request, USER_ID);
@@ -89,7 +89,7 @@ class ResumeServiceTest {
         assertThat(response.getStatus()).isEqualTo(Resume.Status.PENDING);
         assertThat(response.getOriginalFilename()).isEqualTo("resume.pdf");
         verify(resumeRepository).save(any(Resume.class));
-        verify(ociStorageService).uploadFile(any(), eq(file));
+        verify(storageService).uploadFile(any(), eq(file));
     }
 
     @Test
