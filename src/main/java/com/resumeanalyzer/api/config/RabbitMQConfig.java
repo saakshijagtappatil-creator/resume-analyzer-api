@@ -6,9 +6,12 @@ import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
 import org.springframework.amqp.support.converter.MessageConverter;
+import org.springframework.util.backoff.ExponentialBackOff;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+@Slf4j
 @Configuration
 public class RabbitMQConfig {
 
@@ -101,6 +104,14 @@ public class RabbitMQConfig {
         factory.setConcurrentConsumers(2);
         factory.setMaxConcurrentConsumers(5);
         factory.setDefaultRequeueRejected(false);
+
+        // Broker outages: back off exponentially (5s -> 60s) instead of retrying every 5s,
+        // and don't treat a temporarily missing/unreachable queue as fatal.
+        ExponentialBackOff backOff = new ExponentialBackOff(5_000L, 2.0);
+        backOff.setMaxInterval(60_000L);
+        factory.setRecoveryBackOff(backOff);
+        factory.setMissingQueuesFatal(false);
+        factory.setAutoStartup(true);
         return factory;
     }
 }
