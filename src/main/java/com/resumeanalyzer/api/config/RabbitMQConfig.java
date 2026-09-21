@@ -2,11 +2,12 @@ package com.resumeanalyzer.api.config;
 
 import org.springframework.amqp.core.*;
 import org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory;
+import org.springframework.amqp.rabbit.connection.Connection;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
+import org.springframework.amqp.rabbit.connection.ConnectionListener;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
 import org.springframework.amqp.support.converter.MessageConverter;
-import org.springframework.util.backoff.ExponentialBackOff;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -105,13 +106,25 @@ public class RabbitMQConfig {
         factory.setMaxConcurrentConsumers(5);
         factory.setDefaultRequeueRejected(false);
 
-        // Broker outages: back off exponentially (5s -> 60s) instead of retrying every 5s,
+        // Broker outages: exponential back-off (5s -> 60s); after 5 consecutive failures pause 5 min,
         // and don't treat a temporarily missing/unreachable queue as fatal.
-        ExponentialBackOff backOff = new ExponentialBackOff(5_000L, 2.0);
-        backOff.setMaxInterval(60_000L);
-        factory.setRecoveryBackOff(backOff);
+        factory.setRecoveryBackOff(rabbitCircuitBreakerBackOff(connectionFactory));
         factory.setMissingQueuesFatal(false);
         factory.setAutoStartup(true);
         return factory;
+    }
+
+    // ─── Circuit breaker ──────────────────────────────────────
+
+    private RabbitCircuitBreakerBackOff rabbitCircuitBreakerBackOff(ConnectionFactory connectionFactory) {
+        RabbitCircuitBreakerBackOff backOff =
+                new RabbitCircuitBreakerBackOff(5_000L, 2.0, 60_000L, 5, 300_000L);
+        connectionFactory.addConnectionListener(new ConnectionListener() {
+            @Override
+            public void onCreate(Connection connection) {
+                backOff.reset();
+            }
+        });
+        return backOff;
     }
 }
