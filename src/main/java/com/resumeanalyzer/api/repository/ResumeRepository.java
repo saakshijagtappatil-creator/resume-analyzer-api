@@ -2,6 +2,8 @@ package com.resumeanalyzer.api.repository;
 
 import com.resumeanalyzer.api.entity.Resume;
 import com.resumeanalyzer.api.entity.Resume.Status;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -30,6 +32,24 @@ public interface ResumeRepository extends JpaRepository<Resume, String> {
             @Param("fileHash") String fileHash,
             @Param("userId") String userId,
             @Param("jobDescription") String jobDescription);
+    // Same criteria as the duplicate check above; newest first, so callers can take the first row
+    @Query("SELECT r FROM Resume r WHERE r.fileHash = :fileHash " +
+            "AND r.user.id = :userId " +
+            "AND r.status <> com.resumeanalyzer.api.entity.Resume$Status.FAILED " +
+            "AND ((:jobDescription IS NULL AND r.jobDescription IS NULL) " +
+            "OR (:jobDescription IS NOT NULL AND r.jobDescription = :jobDescription)) " +
+            "ORDER BY r.createdAt DESC")
+    List<Resume> findDuplicatesNewestFirst(
+            @Param("fileHash") String fileHash,
+            @Param("userId") String userId,
+            @Param("jobDescription") String jobDescription,
+            Pageable pageable);
+
+    default Optional<Resume> findLatestDuplicate(String fileHash, String userId, String jobDescription) {
+        return findDuplicatesNewestFirst(fileHash, userId, jobDescription, PageRequest.of(0, 1))
+                .stream().findFirst();
+    }
+
     long countByUserId(String userId);
 
     @Query("SELECT r FROM Resume r WHERE r.user.id = :userId AND r.status = :status ORDER BY r.createdAt DESC")

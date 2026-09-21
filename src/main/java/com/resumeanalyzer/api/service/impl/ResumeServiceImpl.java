@@ -64,7 +64,7 @@ public class ResumeServiceImpl implements ResumeService {
                 fileHash, userId, request.getJobDescription())) {
             log.info("Duplicate resume detected for user: {}", userId);
             return resumeRepository
-                    .findByFileHashAndUserId(fileHash, userId)
+                    .findLatestDuplicate(fileHash, userId, request.getJobDescription())
                     .map(this::mapToStatusResponse)
                     .orElseThrow(() -> new ResumeNotFoundException(fileHash));
         }
