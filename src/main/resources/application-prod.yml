@@ -64,7 +64,8 @@ management:
   otlp:
     metrics:
       export:
-        resource-attributes:
+        enabled: false
+      resource-attributes:
           service.name: resume-analyzer
 
 app:
