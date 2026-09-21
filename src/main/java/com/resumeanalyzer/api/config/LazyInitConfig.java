@@ -7,6 +7,9 @@ import org.springframework.amqp.rabbit.listener.RabbitListenerEndpointRegistry;
 import org.springframework.boot.LazyInitializationExcludeFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
+import org.springframework.security.oauth2.client.userinfo.OAuth2UserService;
+import org.springframework.security.oauth2.client.web.OAuth2AuthorizedClientRepository;
 
 /**
  * With spring.main.lazy-initialization=true, beans that only react to events or
@@ -23,6 +26,9 @@ public class LazyInitConfig {
                 RabbitListenerEndpointRegistry.class,
                 RabbitListenerStarter.class,        // @EventListener
                 RabbitStartupLogger.class,          // @EventListener
-                MeterRegistry.class);               // keep metrics registries (incl. OTLP) active
+                MeterRegistry.class,                // keep metrics registries (incl. OTLP) active
+                ClientRegistrationRepository.class,
+                OAuth2AuthorizedClientRepository.class,
+                OAuth2UserService.class);
     }
 }
