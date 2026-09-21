@@ -6,7 +6,7 @@ import io.micrometer.registry.otlp.OtlpConfig;
 import io.micrometer.registry.otlp.OtlpMeterRegistry;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.actuate.autoconfigure.metrics.MeterRegistryCustomizer;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -39,7 +39,7 @@ public class MetricsConfig {
     // Creates an OTLP registry that pushes to Grafana Cloud every 60 s.
     // Only active when app.grafana.otlp-url is set (i.e. in prod).
     @Bean
-    @ConditionalOnProperty(name = "app.grafana.otlp-url")
+    @ConditionalOnExpression("!'${app.grafana.otlp-url:}'.isEmpty()")
     public OtlpMeterRegistry otlpMeterRegistry(Clock clock) {
         OtlpConfig config = new OtlpConfig() {
             @Override

@@ -110,7 +110,9 @@ public class RabbitMQConfig {
         // and don't treat a temporarily missing/unreachable queue as fatal.
         factory.setRecoveryBackOff(rabbitCircuitBreakerBackOff(connectionFactory));
         factory.setMissingQueuesFatal(false);
-        factory.setAutoStartup(true);
+        // Containers are started by RabbitListenerStarter after the app is ready, so a slow
+        // or unreachable broker never delays binding to the HTTP port.
+        factory.setAutoStartup(false);
         return factory;
     }
 

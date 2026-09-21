@@ -1,4 +1,10 @@
 spring:
+  main:
+    lazy-initialization: true   # beans created on first use; RabbitMQ pieces excluded in LazyInitConfig
+
+  flyway:
+    enabled: ${FLYWAY_ENABLED:false}   # set FLYWAY_ENABLED=true for the deploy that needs migrations
+
   datasource:
     url: ${PROD_DB_URL}
     username: ${PROD_DB_USERNAME}
